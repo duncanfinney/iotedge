@@ -271,6 +271,21 @@ function Get-SecurityDaemon {
             Copy-Item "C:\ProgramData\iotedge\iotedged-windows\*" "C:\ProgramData\iotedge" -Force -Recurse
         }
 
+        $Path = 'C:\ProgramData\iotedge'
+        $User = 'BUILTIN\Users'
+        Write-Host "Remove permission for " $User -ForegroundColor "Green"
+        
+        # Remove inherited Write permission for BUILTIN\Users
+        icacls $Path /inheritance:d | Out-Null
+        $Acl = [System.IO.Directory]::GetAccessControl($Path)
+        foreach ($access in $Acl.Access) { 
+            if ($access.IdentityReference.Value -eq $User)  
+            { 
+                $Acl.RemoveAccessRule($access) | Out-Null
+            }
+        } 
+        [System.IO.Directory]::SetAccessControl($Path, $Acl)  
+
         if (Test-UdsSupport) {
             foreach ($Name in "mgmt", "workload")
             {
